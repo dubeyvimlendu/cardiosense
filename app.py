@@ -6,7 +6,7 @@ BASE_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_DIR = os.path.join(BASE_DIR, "model")
 sys.path.insert(0, BASE_DIR)
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="apps/templates")
 
 # ── Load all model artifacts once at startup ──────────────
 model        = joblib.load(os.path.join(MODEL_DIR, "best_model.pkl"))
