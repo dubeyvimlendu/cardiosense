@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <b>Live Demo:</b> https://your-url.up.railway.app &nbsp;|&nbsp;
+  <b>Live Demo:</b> https://web-production-ee5df.up.railway.app/ &nbsp;|&nbsp;
   <b>Dataset:</b> UCI Heart Disease (303 patients)
 </p>
 
