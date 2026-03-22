@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardioSense</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --accent:#e05c3a; --surface:#f4f2ee; --card:#fff;
+  --border:#e0ddd6; --text:#1a1a18; --muted:#888;
+  --red:#e24b4a; --red-bg:#fff5f5; --red-bd:#f09595;
+  --amb:#ba7517; --amb-bg:#faeeda; --amb-bd:#fac775;
+  --grn:#3b6d11; --grn-bg:#eaf3de; --grn-bd:#c0dd97;
+  --blu:#185fa5; --blu-bg:#e6f1fb; --blu-bd:#85b7eb;
+}
+body {
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:var(--surface); color:var(--text); min-height:100vh;
+}
+/* Nav */
+nav {
+  background:var(--card); border-bottom:0.5px solid var(--border);
+  padding:0 28px; height:54px; display:flex;
+  align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:10;
+}
+.logo { font-size:17px; font-weight:600; }
+.logo span { color:var(--accent); }
+.nav-links { display:flex; gap:4px; }
+.nav-btn {
+  font-size:13px; color:var(--muted); padding:6px 14px;
+  border-radius:8px; border:0.5px solid transparent;
+  background:none; cursor:pointer; font-family:inherit;
+  transition:all 0.15s;
+}
+.nav-btn:hover { background:var(--surface); color:var(--text); }
+.nav-btn.active {
+  background:var(--surface); color:var(--text);
+  font-weight:500; border-color:var(--border);
+}
+.badge {
+  font-size:11px; background:var(--grn-bg); color:var(--grn);
+  padding:3px 10px; border-radius:20px; border:0.5px solid var(--grn-bd);
+}
+/* Pages */
+.page { display:none; max-width:960px; margin:0 auto; padding:32px 20px; }
+.page.on { display:block; }
+.ph { margin-bottom:26px; }
+.ph h1 { font-size:21px; font-weight:600; letter-spacing:-0.4px; margin-bottom:4px; }
+.ph p  { font-size:13px; color:var(--muted); }
+/* Cards */
+.card { background:var(--card); border-radius:14px; border:0.5px solid var(--border); padding:22px; }
+.clabel {
+  font-size:11px; font-weight:600; color:var(--muted);
+  text-transform:uppercase; letter-spacing:0.8px; margin-bottom:16px;
+}
+/* Form grid */
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.mg { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+@media(max-width:640px){ .mg,.g2{ grid-template-columns:1fr; } }
+.fld { margin-bottom:11px; }
+.fld label { display:block; font-size:12px; color:#555; margin-bottom:4px; font-weight:500; }
+input[type=number], select {
+  width:100%; height:36px; border:0.5px solid var(--border); border-radius:8px;
+  background:#fafaf8; padding:0 10px; font-size:13px; color:var(--text);
+  outline:none; transition:border-color .15s,box-shadow .15s;
+  -webkit-appearance:none; appearance:none;
+}
+input:focus, select:focus {
+  border-color:var(--accent); box-shadow:0 0 0 3px rgba(224,92,58,.1);
+}
+input.err { border-color:var(--red)!important; }
+.btn {
+  width:100%; height:42px; background:var(--text); color:#fff; border:none;
+  border-radius:10px; font-size:14px; font-weight:500; cursor:pointer; margin-top:8px;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:background .15s,transform .1s;
+}
+.btn:hover { background:var(--accent); }
+.btn:active { transform:scale(.98); }
+.btn:disabled { background:#ccc; cursor:not-allowed; transform:none; }
+.spin {
+  width:15px; height:15px; border:2px solid rgba(255,255,255,.35);
+  border-top-color:#fff; border-radius:50%; animation:spin .65s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+/* Empty */
+.empty { text-align:center; padding:48px 20px; color:#bbb; }
+.empty-icon {
+  width:50px; height:50px; border-radius:50%; background:var(--surface);
+  margin:0 auto 12px; display:flex; align-items:center; justify-content:center; font-size:22px;
+}
+/* Result */
+#result-panel { display:none; }
+.rbanner { border-radius:10px; padding:16px 18px; margin-bottom:16px; }
+.rbanner.high     { background:var(--red-bg); border:1px solid var(--red-bd); }
+.rbanner.moderate { background:var(--amb-bg); border:1px solid var(--amb-bd); }
+.rbanner.low      { background:var(--grn-bg); border:1px solid var(--grn-bd); }
+.rrow { display:flex; justify-content:space-between; align-items:flex-start; }
+.rtitle { font-size:13px; font-weight:600; margin-bottom:2px; }
+.rbanner.high     .rtitle { color:var(--red); }
+.rbanner.moderate .rtitle { color:var(--amb); }
+.rbanner.low      .rtitle { color:var(--grn); }
+.rpct { font-size:29px; font-weight:600; line-height:1; }
+.rbanner.high     .rpct { color:var(--red); }
+.rbanner.moderate .rpct { color:var(--amb); }
+.rbanner.low      .rpct { color:var(--grn); }
+.rsub { font-size:11px; color:var(--muted); margin-top:4px; }
+.chip { font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; flex-shrink:0; }
+.chip.high     { background:var(--red-bg); color:var(--red); border:0.5px solid var(--red-bd); }
+.chip.moderate { background:var(--amb-bg); color:var(--amb); border:0.5px solid var(--amb-bd); }
+.chip.low      { background:var(--grn-bg); color:var(--grn); border:0.5px solid var(--grn-bd); }
+/* Meter */
+.mtr { margin-bottom:18px; }
+.mtr-hd { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:6px; }
+.mtr-track { height:7px; background:#ede9e3; border-radius:4px; overflow:hidden; }
+.mtr-fill {
+  height:100%; width:0; border-radius:4px;
+  background:linear-gradient(90deg,#4caf82,#f0c040,#e24b4a);
+  transition:width .7s cubic-bezier(.4,0,.2,1);
+}
+.slabel {
+  font-size:11px; font-weight:600; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.8px; margin-bottom:12px;
+}
+/* SHAP */
+.srow { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.sfeat { width:88px; flex-shrink:0; font-size:11px; color:#555; text-align:right; font-family:monospace; }
+.strack { flex:1; height:13px; background:#f0ede8; border-radius:4px; overflow:hidden; display:flex; }
+.sbar { height:100%; border-radius:4px; transition:width .5s ease; }
+.sbar.pos { background:#e24b4a; }
+.sbar.neg { background:#378add; margin-left:auto; }
+.snum { width:46px; font-size:11px; font-family:monospace; text-align:right; flex-shrink:0; }
+.snum.pos { color:#a32d2d; }
+.snum.neg { color:var(--blu); }
+/* Tags */
+.tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:14px; }
+.tag { font-size:11px; padding:3px 10px; border-radius:20px; font-weight:500; }
+.tag.risk       { background:var(--red-bg); color:#a32d2d; border:0.5px solid var(--red-bd); }
+.tag.protective { background:var(--blu-bg); color:var(--blu); border:0.5px solid var(--blu-bd); }
+
+/* ── Evaluation page ── */
+.eval-intro {
+  background:var(--card); border-radius:14px; border:0.5px solid var(--border);
+  padding:18px 22px; margin-bottom:20px; display:flex; gap:14px; align-items:flex-start;
+}
+.eval-icon {
+  width:38px; height:38px; border-radius:9px; background:var(--grn-bg);
+  border:0.5px solid var(--grn-bd); display:flex; align-items:center;
+  justify-content:center; font-size:17px; flex-shrink:0;
+}
+.eval-intro h2 { font-size:15px; font-weight:600; margin-bottom:4px; }
+.eval-intro p  { font-size:13px; color:var(--muted); line-height:1.6; }
+/* Metric tabs */
+.mtabs { display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap; }
+.mtab {
+  font-size:12px; padding:6px 14px; border-radius:8px; cursor:pointer;
+  border:0.5px solid var(--border); background:var(--card);
+  color:var(--muted); transition:all .15s; font-weight:500;
+}
+.mtab:hover { border-color:#999; color:var(--text); }
+.mtab.on { background:var(--text); color:#fff; border-color:var(--text); }
+/* Model cards */
+.mcards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:22px; }
+@media(max-width:640px){ .mcards { grid-template-columns:1fr; } }
+.mcard {
+  background:var(--card); border-radius:14px; border:0.5px solid var(--border);
+  padding:20px; position:relative; overflow:hidden;
+}
+.mcard.winner { border:1.5px solid var(--grn); }
+.mcard.winner::before {
+  content:""; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg,#4caf82,#3b6d11);
+}
+.mname { font-size:14px; font-weight:600; margin-bottom:2px; }
+.msub  { font-size:11px; color:var(--muted); margin-bottom:14px; }
+.wbadge {
+  font-size:10px; font-weight:600; background:var(--grn-bg); color:var(--grn);
+  border:0.5px solid var(--grn-bd); padding:2px 8px; border-radius:20px;
+  margin-left:6px; vertical-align:middle;
+}
+/* Metric rows */
+.mrow { margin-bottom:10px; }
+.mrow-hd { display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; }
+.mrow-k { color:#555; font-weight:500; }
+.mrow-v { font-weight:600; }
+.mtrack { height:6px; background:#f0ede8; border-radius:3px; overflow:hidden; }
+.mbar   { height:100%; border-radius:3px; background:#378add; transition:width .6s ease; }
+.mcard.winner .mbar { background:var(--grn); }
+/* Confusion matrix */
+.cm { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:14px; }
+.cm-cell { border-radius:6px; padding:8px 4px; text-align:center; }
+.cm-cell .n { font-size:20px; font-weight:600; }
+.cm-cell .l { font-size:10px; color:var(--muted); margin-top:2px; }
+.tp,.tn { background:var(--grn-bg); }
+.tp .n,.tn .n { color:var(--grn); }
+.fp,.fn { background:var(--red-bg); }
+.fp .n,.fn .n { color:var(--red); }
+/* Why section */
+.why {
+  background:var(--card); border-radius:14px; border:1.5px solid var(--grn);
+  padding:22px; margin-bottom:20px;
+}
+.why-hd { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.why-icon {
+  width:36px; height:36px; border-radius:8px; background:var(--grn-bg);
+  border:0.5px solid var(--grn-bd); display:flex; align-items:center;
+  justify-content:center; font-size:16px; flex-shrink:0;
+}
+.why-hd h2 { font-size:15px; font-weight:600; }
+.why-hd p  { font-size:12px; color:var(--muted); }
+.why-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:540px){ .why-grid { grid-template-columns:1fr; } }
+.why-pt {
+  background:var(--grn-bg); border:0.5px solid var(--grn-bd);
+  border-radius:10px; padding:14px;
+}
+.why-pt h3 { font-size:12px; font-weight:600; color:var(--grn); margin-bottom:4px; }
+.why-pt p  { font-size:12px; color:#3d3d3a; line-height:1.55; }
+/* Global SHAP */
+.gsrow { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.gsf { width:76px; font-size:12px; color:#555; text-align:right; font-weight:500; }
+.gst { flex:1; height:13px; background:#f0ede8; border-radius:4px; overflow:hidden; }
+.gsb { height:100%; border-radius:4px; background:var(--accent); transition:width .6s ease; }
+.gsv { width:42px; font-size:11px; color:var(--muted); font-family:monospace; }
+/* Loading */
+.loading { text-align:center; padding:60px 20px; color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Cardio<span>Sense</span></div>
+  <div class="nav-links">
+    <button class="nav-btn on" id="nb-predict"  onclick="goTo('predict')">Predict</button>
+    <button class="nav-btn"   id="nb-evaluate"  onclick="goTo('evaluate')">Model evaluation</button>
+    <button class="nav-btn"   id="nb-stats"     onclick="goTo('stats')">Stats</button>
+  </div>
+  <div class="badge">XGBoost + SHAP</div>
+</nav>
+
+<!-- ═══════════════════════════════════
+     PREDICT PAGE
+════════════════════════════════════ -->
+<div id="predict-page" class="page on">
+  <div class="ph">
+    <h1>Heart disease risk analyser</h1>
+    <p>Enter patient vitals — get an ML-powered risk assessment with explainable AI</p>
+  </div>
+  <div class="mg">
+    <!-- Form -->
+    <div class="card">
+      <div class="clabel">Patient information</div>
+      <div class="g2">
+        <div class="fld"><label>Age</label>
+          <input type="number" id="age" placeholder="e.g. 54" min="20" max="90"></div>
+        <div class="fld"><label>Sex</label>
+          <select id="sex">
+            <option value="1">Male</option>
+            <option value="0">Female</option>
+          </select></div>
+      </div>
+      <div class="fld"><label>Chest pain type</label>
+        <select id="cp">
+          <option value="0">Type 0 — typical angina</option>
+          <option value="1">Type 1 — atypical angina</option>
+          <option value="2">Type 2 — non-anginal pain</option>
+          <option value="3">Type 3 — asymptomatic</option>
+        </select></div>
+      <div class="g2">
+        <div class="fld"><label>Resting BP (mmHg)</label>
+          <input type="number" id="trestbps" placeholder="e.g. 130"></div>
+        <div class="fld"><label>Cholesterol (mg/dl)</label>
+          <input type="number" id="chol" placeholder="e.g. 250"></div>
+      </div>
+      <div class="g2">
+        <div class="fld"><label>Fasting blood sugar &gt;120</label>
+          <select id="fbs">
+            <option value="0">No</option><option value="1">Yes</option>
+          </select></div>
+        <div class="fld"><label>Resting ECG</label>
+          <select id="restecg">
+            <option value="0">Normal</option>
+            <option value="1">ST-T abnormality</option>
+            <option value="2">LV hypertrophy</option>
+          </select></div>
+      </div>
+      <div class="g2">
+        <div class="fld"><label>Max heart rate</label>
+          <input type="number" id="thalach" placeholder="e.g. 150"></div>
+        <div class="fld"><label>Exercise-induced angina</label>
+          <select id="exang">
+            <option value="0">No</option><option value="1">Yes</option>
+          </select></div>
+      </div>
+      <div class="g2">
+        <div class="fld"><label>ST depression (oldpeak)</label>
+          <input type="number" id="oldpeak" step="0.1" placeholder="e.g. 1.5"></div>
+        <div class="fld"><label>Slope of ST segment</label>
+          <select id="slope">
+            <option value="0">Upsloping</option>
+            <option value="1">Flat</option>
+            <option value="2">Downsloping</option>
+          </select></div>
+      </div>
+      <div class="g2">
+        <div class="fld"><label>Major vessels (ca)</label>
+          <select id="ca">
+            <option value="0">0</option><option value="1">1</option>
+            <option value="2">2</option><option value="3">3</option>
+          </select></div>
+        <div class="fld"><label>Thalassemia</label>
+          <select id="thal">
+            <option value="1">Normal</option>
+            <option value="2">Fixed defect</option>
+            <option value="3">Reversible defect</option>
+          </select></div>
+      </div>
+      <button class="btn" id="pbtn" onclick="runPredict()">Analyse risk</button>
+    </div>
+    <!-- Result -->
+    <div class="card">
+      <div class="clabel">Analysis result</div>
+      <div class="empty" id="empty">
+        <div class="empty-icon">&#10084;</div>
+        <p>Fill in the patient details<br>and click Analyse risk</p>
+      </div>
+      <div id="result-panel">
+        <div class="rbanner" id="rbanner">
+          <div class="rrow">
+            <div>
+              <div class="rtitle" id="rtitle">—</div>
+              <div class="rpct"   id="rpct">—</div>
+              <div class="rsub">Powered by XGBoost · UCI heart dataset</div>
+            </div>
+            <div class="chip" id="rchip">—</div>
+          </div>
+        </div>
+        <div class="mtr">
+          <div class="mtr-hd">
+            <span>Predicted risk</span>
+            <span id="mpct">0%</span>
+          </div>
+          <div class="mtr-track"><div class="mtr-fill" id="mfill"></div></div>
+        </div>
+        <div class="slabel">Why did the model predict this?</div>
+        <div id="shaprows"></div>
+        <div class="tags" id="tagrow"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     EVALUATE PAGE
+════════════════════════════════════ -->
+<div id="evaluate-page" class="page">
+  <div class="ph">
+    <h1>Model evaluation</h1>
+    <p>How each model performed — and the data-driven reason XGBoost was selected</p>
+  </div>
+
+  <div class="eval-intro">
+    <div class="eval-icon">&#128202;</div>
+    <div>
+      <h2>Systematic model selection</h2>
+      <p>Three models trained on identical 80/20 splits, evaluated with 5-fold
+         cross-validation. Winner selected by ROC-AUC — the most reliable metric
+         for binary medical classification.</p>
+    </div>
+  </div>
+
+  <!-- Metric tabs -->
+  <div class="mtabs">
+    <div class="mtab on"  onclick="setTab(this,'all')">All metrics</div>
+    <div class="mtab"     onclick="setTab(this,'accuracy')">Accuracy</div>
+    <div class="mtab"     onclick="setTab(this,'auc')">ROC-AUC</div>
+    <div class="mtab"     onclick="setTab(this,'recall')">Recall</div>
+    <div class="mtab"     onclick="setTab(this,'confusion')">Confusion matrix</div>
+  </div>
+
+  <!-- Model cards injected here -->
+  <div id="mcards"><div class="loading">Loading model metrics from server...</div></div>
+
+  <!-- Why XGBoost -->
+  <div class="why">
+    <div class="why-hd">
+      <div class="why-icon">&#127942;</div>
+      <div>
+        <h2>Why XGBoost was selected</h2>
+        <p>Data-driven reasoning behind the model choice</p>
+      </div>
+    </div>
+    <div class="why-grid">
+      <div class="why-pt">
+        <h3>Highest ROC-AUC</h3>
+        <p>AUC measures how well the model separates disease from
+           no-disease at every decision threshold — more meaningful
+           than raw accuracy for medical classifiers.</p>
+      </div>
+      <div class="why-pt">
+        <h3>Best recall on disease class</h3>
+        <p>Missing a real disease case costs more than a false alarm.
+           XGBoost had the highest recall — fewest missed disease cases
+           across all evaluation folds.</p>
+      </div>
+      <div class="why-pt">
+        <h3>Captures feature interactions</h3>
+        <p>Heart disease risk depends on combinations — chest pain type
+           plus ST depression together. Gradient boosting captures these
+           non-linear interactions better than logistic regression.</p>
+      </div>
+      <div class="why-pt">
+        <h3>Lowest cross-validation variance</h3>
+        <p>XGBoost had the lowest std deviation across 5 folds —
+           meaning it generalises more reliably to unseen patients,
+           not just the training split.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global SHAP -->
+  <div class="card">
+    <div class="clabel">Feature importance — what drives predictions (SHAP)</div>
+    <div id="gshap"></div>
+    <p style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5">
+      Mean absolute SHAP value across all test patients.
+      Chest pain type and max heart rate are the strongest predictors.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     STATS PAGE
+════════════════════════════════════ -->
+<div id="stats-page" class="page">
+  <div class="ph">
+    <h1>Model stats</h1>
+    <p>Best model performance summary</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+    <div class="card">
+      <div class="clabel">Test accuracy</div>
+      <div style="font-size:26px;font-weight:600" id="s-acc">—</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">XGBoost on test set</div>
+    </div>
+    <div class="card">
+      <div class="clabel">ROC-AUC</div>
+      <div style="font-size:26px;font-weight:600" id="s-auc">—</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">5-fold cross-val</div>
+    </div>
+    <div class="card">
+      <div class="clabel">F1 score</div>
+      <div style="font-size:26px;font-weight:600" id="s-f1">—</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Harmonic mean P/R</div>
+    </div>
+    <div class="card">
+      <div class="clabel">Training samples</div>
+      <div style="font-size:26px;font-weight:600">242</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">80% of 303 patients</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// Page navigation — completely rewritten
+// ─────────────────────────────────────────
+const PAGES = ['predict','evaluate','stats'];
+
+function goTo(name) {
+  // Hide all pages
+  PAGES.forEach(p => {
+    document.getElementById(p + '-page').classList.remove('on');
+    document.getElementById('nb-' + p).classList.remove('on');
+  });
+  // Show target
+  document.getElementById(name + '-page').classList.add('on');
+  document.getElementById('nb-' + name).classList.add('on');
+  // Load data if needed
+  if (name === 'evaluate') loadReport();
+}
+
+// ─────────────────────────────────────────
+// Metric tab switching
+// ─────────────────────────────────────────
+let activeTab = 'all';
+
+function setTab(el, tab) {
+  document.querySelectorAll('.mtab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  activeTab = tab;
+  if (window._models) renderCards(window._models);
+}
+
+// ─────────────────────────────────────────
+// Load /model-report and render
+// ─────────────────────────────────────────
+let reportLoaded = false;
+
+async function loadReport() {
+  if (reportLoaded) return;
+
+  document.getElementById('mcards').innerHTML =
+    '<div class="loading">Loading model metrics...</div>';
+
+  try {
+    const res  = await fetch('/model-report');
+    const data = await res.json();
+
+    if (data.status !== 'ok') throw new Error(data.message);
+
+    window._models = data.models;
+    reportLoaded   = true;
+
+    renderCards(data.models);
+    renderGlobalShap();
+    fillStats(data.models);
+
+  } catch(err) {
+    document.getElementById('mcards').innerHTML =
+      `<div class="loading" style="color:var(--red)">
+         Error loading metrics: ${err.message}<br>
+         <small>Check that /model-report returns JSON</small>
+       </div>`;
+  }
+}
+
+// ─────────────────────────────────────────
+// Render three model cards
+// ─────────────────────────────────────────
+const MODEL_SUBS = {
+  'Logistic Regression': 'Linear · interpretable · fast baseline',
+  'Random Forest'      : 'Ensemble · bagging · low variance',
+  'XGBoost'            : 'Gradient boosting · handles interactions',
+};
+
+const ALL_METRICS = [
+  { key:'accuracy',  label:'Accuracy',  suffix:'%' },
+  { key:'precision', label:'Precision', suffix:'%' },
+  { key:'recall',    label:'Recall',    suffix:'%' },
+  { key:'f1',        label:'F1 score',  suffix:'%' },
+  { key:'auc',       label:'ROC-AUC',   suffix:'',  raw:true },
+];
+
+function renderCards(models) {
+  const tab = activeTab;
+
+  const html = models.map(m => {
+    const isW = m.is_best;
+
+    // Which metrics to show
+    const metrics = tab === 'all'       ? ALL_METRICS
+                  : tab === 'confusion' ? []
+                  : ALL_METRICS.filter(x => x.key === tab);
+
+    const bars = metrics.map(met => {
+      const val     = met.raw ? m[met.key] * 100 : m[met.key];
+      const display = met.raw ? m[met.key].toFixed(3) : m[met.key].toFixed(1) + met.suffix;
+      return `
+        <div class="mrow">
+          <div class="mrow-hd">
+            <span class="mrow-k">${met.label}</span>
+            <span class="mrow-v">${display}</span>
+          </div>
+          <div class="mtrack">
+            <div class="mbar" style="width:${val.toFixed(1)}%"></div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Confusion matrix
+    let cmHtml = '';
+    if ((tab === 'confusion' || tab === 'all') && m.cm) {
+      const [[tn,fp],[fn,tp]] = m.cm;
+      cmHtml = `
+        <div class="slabel" style="margin-top:14px">Confusion matrix</div>
+        <div class="cm">
+          <div class="cm-cell tp"><div class="n">${tp}</div><div class="l">True positive</div></div>
+          <div class="cm-cell fp"><div class="n">${fp}</div><div class="l">False positive</div></div>
+          <div class="cm-cell fn"><div class="n">${fn}</div><div class="l">False negative</div></div>
+          <div class="cm-cell tn"><div class="n">${tn}</div><div class="l">True negative</div></div>
+        </div>`;
+    }
+
+    return `
+      <div class="mcard${isW ? ' winner' : ''}">
+        <div class="mname">
+          ${m.name}${isW ? '<span class="wbadge">Selected</span>' : ''}
+        </div>
+        <div class="msub">${MODEL_SUBS[m.name] || ''}</div>
+        ${bars}
+        ${cmHtml}
+      </div>`;
+  }).join('');
+
+  document.getElementById('mcards').innerHTML =
+    `<div class="mcards">${html}</div>`;
+}
+
+// ─────────────────────────────────────────
+// Global SHAP bars (from training)
+// ─────────────────────────────────────────
+function renderGlobalShap() {
+  const feats = [
+    {name:'cp',      val:0.221},
+    {name:'thalach', val:0.198},
+    {name:'exang',   val:0.187},
+    {name:'oldpeak', val:0.173},
+    {name:'ca',      val:0.156},
+    {name:'thal',    val:0.134},
+    {name:'age',     val:0.112},
+    {name:'slope',   val:0.098},
+  ];
+  const max = feats[0].val;
+  document.getElementById('gshap').innerHTML = feats.map(f => `
+    <div class="gsrow">
+      <div class="gsf">${f.name}</div>
+      <div class="gst"><div class="gsb" style="width:${Math.round(f.val/max*100)}%"></div></div>
+      <div class="gsv">${f.val.toFixed(3)}</div>
+    </div>`).join('');
+}
+
+// ─────────────────────────────────────────
+// Fill stats page numbers from real data
+// ─────────────────────────────────────────
+function fillStats(models) {
+  const best = models.find(m => m.is_best);
+  if (!best) return;
+  document.getElementById('s-acc').textContent = best.accuracy.toFixed(1) + '%';
+  document.getElementById('s-auc').textContent = best.auc.toFixed(3);
+  document.getElementById('s-f1').textContent  = (best.f1 / 100).toFixed(3);
+}
+
+// ─────────────────────────────────────────
+// Prediction
+// ─────────────────────────────────────────
+async function runPredict() {
+  const btn  = document.getElementById('pbtn');
+  const nums = ['age','trestbps','chol','thalach','oldpeak'];
+  const all  = ['age','sex','cp','trestbps','chol','fbs',
+                'restecg','thalach','exang','oldpeak','slope','ca','thal'];
+
+  let ok = true;
+  nums.forEach(f => {
+    const el = document.getElementById(f);
+    if (!el.value) {
+      el.classList.add('err');
+      el.addEventListener('input', () => el.classList.remove('err'), {once:true});
+      ok = false;
+    }
+  });
+  if (!ok) return;
+
+  const payload = {};
+  all.forEach(f => payload[f] = document.getElementById(f).value);
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spin"></div>Analysing...';
+
+  try {
+    const res  = await fetch('/predict', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.status === 'error') throw new Error(data.message);
+    showResult(data);
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Analyse risk';
+  }
+}
+
+function showResult(data) {
+  document.getElementById('empty').style.display        = 'none';
+  document.getElementById('result-panel').style.display = 'block';
+
+  const band = data.risk_band.toLowerCase();
+
+  // Banner
+  const banner = document.getElementById('rbanner');
+  banner.className = 'rbanner ' + band;
+  document.getElementById('rtitle').textContent =
+    data.prediction === 1 ? 'Heart Disease Detected' : 'No Heart Disease Detected';
+  document.getElementById('rpct').textContent =
+    data.probability.toFixed(1) + '% confidence';
+
+  // Chip
+  const chip = document.getElementById('rchip');
+  chip.textContent = data.risk_band + ' risk';
+  chip.className   = 'chip ' + band;
+
+  // Meter
+  document.getElementById('mfill').style.width = data.probability + '%';
+  document.getElementById('mpct').textContent  = data.probability.toFixed(1) + '%';
+
+  // SHAP
+  const maxV = Math.max(...data.explanation.map(e => Math.abs(e.shap_value)));
+  const sc   = document.getElementById('shaprows');
+  sc.innerHTML = '';
+  data.explanation.forEach(e => {
+    const pct   = Math.round(Math.abs(e.shap_value) / maxV * 100);
+    const isPos = e.direction === 'risk';
+    const row   = document.createElement('div');
+    row.className = 'srow';
+    row.innerHTML = `
+      <div class="sfeat">${e.feature}</div>
+      <div class="strack">
+        <div class="sbar ${isPos?'pos':'neg'}"
+             style="width:${pct}%${isPos?'':';margin-left:auto'}"></div>
+      </div>
+      <div class="snum ${isPos?'pos':'neg'}">${isPos?'+':''}${e.shap_value.toFixed(3)}</div>`;
+    sc.appendChild(row);
+  });
+
+  // Tags
+  const tr = document.getElementById('tagrow');
+  tr.innerHTML = '';
+  data.explanation.slice(0,4).forEach(e => {
+    const t = document.createElement('span');
+    t.className   = 'tag ' + (e.direction==='risk' ? 'risk' : 'protective');
+    t.textContent = e.feature + ' ' + (e.direction==='risk' ? '▲' : '▼');
+    tr.appendChild(t);
+  });
+}
+</script>
+</body>
+</html>
