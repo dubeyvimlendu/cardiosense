@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template
 import joblib, numpy as np, pandas as pd, os, sys
 
 # ── Path setup ────────────────────────────────────────────
-BASE_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, "model")
 sys.path.insert(0, BASE_DIR)
 
